@@ -15,7 +15,7 @@ import javax.swing.JPanel
 import javax.swing.JRadioButton
 import javax.swing.JTextField
 
-class OpModeDialog() : DialogWrapper(true) {
+class OpModeDialog : DialogWrapper(true) {
     val className: JTextField = JTextField()
     val opmodeName: JTextField = JTextField()
     val groupName: JTextField = JTextField()
@@ -107,7 +107,7 @@ class MakeOpMode: AnAction("Add FTC OpMode") {
         val teleopSelected = dialog.opmodeType.elements.nextElement().isSelected
         val isJava = dialog.languageType.elements.nextElement().isSelected
         val isLinear = dialog.classType.elements.nextElement().isSelected
-        WriteCommandAction.runWriteCommandAction(proj, {
+        WriteCommandAction.runWriteCommandAction(proj) {
             addFile(
                 name,
                 dir,
@@ -118,6 +118,6 @@ class MakeOpMode: AnAction("Add FTC OpMode") {
                 isJava,
                 isLinear
             )
-        })
+        }
     }
 }
