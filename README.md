@@ -1,5 +1,4 @@
-# README
-
+# 5273-Android-Studio-Plugin
 An [Android Studio](https://developer.android.com/studio) plugin intended to make writing [FTC](https://www.firstinspires.org/robotics/ftc) code easier.
 
 ## What does this plugin do?
