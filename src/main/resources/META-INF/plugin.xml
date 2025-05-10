@@ -1,0 +1,21 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>com.plugin</id>
+    <name>some plugin (name???)</name>
+    <vendor>something something</vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+    </extensions>
+    <actions>
+        <action id="com.plugin.MakeOpMode" class="com.plugin.MakeOpMode" text="FTC OpMode"
+                description="Adds an FTC OpMode">
+            <add-to-group group-id="NewGroup" anchor="after" relative-to-action="Kotlin.NewFile"/>
+        </action>
+        <action id="com.plugin.Hardware" class="com.plugin.Hardware" text="Add FTC Hardware"
+                description="Adds FTC Hardware as a class field on a class">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="ShowIntentionsGroup"/>
+        </action>
+    </actions>
+</idea-plugin>
