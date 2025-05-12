@@ -12,11 +12,15 @@
     <actions>
         <action id="com.plugin.MakeOpMode" class="com.plugin.MakeOpMode" text="FTC OpMode"
                 description="Adds an FTC OpMode">
-            <add-to-group group-id="NewGroup" anchor="after" relative-to-action="Kotlin.NewFile"/>
+            <add-to-group group-id="NewGroup" anchor="after" relative-to-action="NewFile"/>
         </action>
         <action id="com.plugin.Hardware" class="com.plugin.Hardware" text="Add FTC Hardware"
                 description="Adds FTC Hardware as a class field on a class">
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="ShowIntentionsGroup"/>
+        </action>
+        <action id="co.plugin.EditGradleFile" class="com.plugin.EditGradleFile" text="ShowGradleContents"
+                description="Shows the contents of the gradle file in teamcode">
+            <add-to-group group-id="NewGroup" anchor="after" relative-to-action="com.plugin.MakeOpMode"/>
         </action>
     </actions>
 </idea-plugin>

@@ -16,6 +16,7 @@ import java.util.Enumeration;
 
 public class MakeOpMode extends AnAction {
     private void addFile(
+            //params
             String name,
             PsiDirectory dir,
             Project project,
@@ -24,12 +25,13 @@ public class MakeOpMode extends AnAction {
             boolean teleop,
             boolean isJava,
             boolean isLinear
-    ) {
-        String suffix = isJava ? "java" : "kt";
-        FileType fileType = FileTypeManager.getInstance().getFileTypeByExtension(suffix);
-        PsiFileFactory factory = PsiFileFactory.getInstance(project);
-        String text = OpModeGenerator.createOpMode(isJava, name, opmode, group, teleop, isLinear);
-        dir.add(factory.createFileFromText(name + "." + suffix, fileType, text));
+    )
+    {
+        String suffix = isJava ? "java" : "kt"; //ternary sigma boy decides the extension suffix based on whether or not it is java
+        FileType fileType = FileTypeManager.getInstance().getFileTypeByExtension(suffix); //wow they really make methods for anything
+        PsiFileFactory factory = PsiFileFactory.getInstance(project); //lets you make files from text tied to a specific project
+        String text = OpModeGenerator.createOpMode(isJava, name, opmode, group, teleop, isLinear); //Generates the text
+        dir.add(factory.createFileFromText(name + "." + suffix, fileType, text)); //adds the file based on the text
     }
 
     @Override
