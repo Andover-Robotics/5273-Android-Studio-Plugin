@@ -9,6 +9,7 @@ import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -16,11 +17,14 @@ import com.intellij.psi.PsiFileFactory;
 import com.intellij.psi.PsiManager;
 
 import javax.swing.*;
+
+import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.Objects;
 
 public class EditGradleFile extends AnAction {
     private static PsiFile getGradleFile(Project project) {
+       /*
         VirtualFile baseDir = project.getWorkspaceFile();
         if (baseDir == null) {
             Messages.showErrorDialog(project, "Project workspace file not found.", "Error");
@@ -28,6 +32,19 @@ public class EditGradleFile extends AnAction {
         }
 
         VirtualFile file = baseDir.findFileByRelativePath("TeamCode/build.gradle");
+
+        */
+
+        String fullPath = Paths.get(project.getBasePath(),"TeamCode/build.gradle").toString();
+
+        // Convert it to a file URL (required by IntelliJ's VFS)
+        String fileUrl = "file://" + fullPath.replace("\\", "/");
+
+        // Locate the file
+        VirtualFile file = VirtualFileManager.getInstance().findFileByUrl(fileUrl);
+
+
+
         if (file == null) {
             Messages.showErrorDialog(project, "build.gradle not found at TeamCode/build.gradle", "Error");
             return null;
@@ -51,8 +68,6 @@ public class EditGradleFile extends AnAction {
         }
 
         Messages.showInfoMessage(project.getBasePath(),"path");
-        Messages.showInfoMessage();
-
         PsiFile gradleFile = getGradleFile(project);
         if (gradleFile == null) {
             return;
