@@ -20,7 +20,9 @@
         </action>
         <action id="co.plugin.EditGradleFile" class="com.plugin.EditGradleFile" text="ShowGradleContents"
                 description="Shows the contents of the gradle file in teamcode">
-            <add-to-group group-id="NewGroup" anchor="after" relative-to-action="com.plugin.MakeOpMode"/>
+            <add-to-group group-id="EditorPopupMenu"
+                anchor="after"
+                relative-to-action="ShowIntentionsGroup"/>
         </action>
     </actions>
 </idea-plugin>
