@@ -24,26 +24,12 @@ import java.util.Objects;
 
 public class EditGradleFile extends AnAction {
     private static PsiFile getGradleFile(Project project) {
-       /*
-        VirtualFile baseDir = project.getWorkspaceFile();
-        if (baseDir == null) {
-            Messages.showErrorDialog(project, "Project workspace file not found.", "Error");
-            return null;
-        }
-
-        VirtualFile file = baseDir.findFileByRelativePath("TeamCode/build.gradle");
-
-        */
 
         String fullPath = Paths.get(project.getBasePath(),"TeamCode/build.gradle").toString();
 
-        // Convert it to a file URL (required by IntelliJ's VFS)
         String fileUrl = "file://" + fullPath.replace("\\", "/");
 
-        // Locate the file
         VirtualFile file = VirtualFileManager.getInstance().findFileByUrl(fileUrl);
-
-
 
         if (file == null) {
             Messages.showErrorDialog(project, "build.gradle not found at TeamCode/build.gradle", "Error");
@@ -55,7 +41,6 @@ public class EditGradleFile extends AnAction {
             Messages.showErrorDialog(project, "Failed to load the Gradle file.", "Error");
             return null;
         }
-
         return psiFile;
     }
 
@@ -66,22 +51,15 @@ public class EditGradleFile extends AnAction {
             Messages.showErrorDialog("Project is not available.", "Error");
             return;
         }
-
-        Messages.showInfoMessage(project.getBasePath(),"path");
         PsiFile gradleFile = getGradleFile(project);
         if (gradleFile == null) {
             return;
         }
-
         String gradleContents = gradleFile.getText();
         if (gradleContents.isEmpty()) {
             Messages.showErrorDialog(project, "Gradle file is empty.", "Error");
             return;
         }
-
-        // Debug: Log contents to the console
-        System.out.println(gradleContents);
-
         Messages.showInfoMessage(gradleContents, "Gradle Contents:");
     }
 }
