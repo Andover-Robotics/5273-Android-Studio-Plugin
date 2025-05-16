@@ -5,7 +5,7 @@
     <vendor>something something</vendor>
 
     <depends>com.intellij.modules.platform</depends>
-    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.java</depends>
     <depends>org.intellij.groovy</depends>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -19,8 +19,8 @@
                 description="Adds FTC Hardware as a class field on a class">
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="ShowIntentionsGroup"/>
         </action>
-        <action id="co.plugin.EditGradleFile" class="com.plugin.EditGradleFile" text="ShowGradleContents"
-                description="Shows the contents of the gradle file in teamcode">
+        <action id="com.plugin.AddGradleDependency" class="com.plugin.AddGradleDependency" text="Add Gradle Dependency"
+                description="Adds a Gradle dependency">
             <add-to-group group-id="EditorPopupMenu"
                 anchor="after"
                 relative-to-action="ShowIntentionsGroup"/>
