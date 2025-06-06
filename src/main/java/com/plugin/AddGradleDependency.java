@@ -15,6 +15,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.util.PsiTreeUtil;
+import com.intellij.ui.JBColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyFile;
@@ -30,39 +31,137 @@ import org.jetbrains.plugins.groovy.lang.resolve.api.Argument;
 import org.jetbrains.plugins.groovy.lang.resolve.api.GroovyMethodCallReference;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 
+class Library {
+    public String library;
+    public String version;
+
+    public Library() {
+        this.library = "";
+        this.version = "";
+    }
+    public Library(String library, String version) {
+        this.library = library;
+        this.version = version;
+    }
+}
+
 class Dialog extends DialogWrapper {
-    final ButtonGroup libraryChoice;
+    public ArrayList<Library> libraries = new ArrayList<>();
+    private final JPanel dropdown = new JPanel();
+    private final JPanel panel = new JPanel();
     Dialog() {
         super(true);
-        libraryChoice = new ButtonGroup();
-        setTitle("Choose Library");
+        setTitle("Add Dependencies");
         init();
-    }
-
-    private JPanel addRadioButtons(ButtonGroup group, JRadioButton... buttons) {
-        JPanel panel = new JPanel();
-        for (JRadioButton button : buttons) {
-            group.add(button);
-            panel.add(button);
-        }
-        return panel;
     }
 
     @Override
     protected @Nullable JComponent createCenterPanel() {
-        JPanel panel = new JPanel();
-        JRadioButton button1 = new JRadioButton("Roadrunner");
-        JRadioButton button2 = new JRadioButton("Pedro Pathing");
-        JPanel panel2 = addRadioButtons(libraryChoice, button1, button2);
-        panel2.setLayout(new BoxLayout(panel2, BoxLayout.Y_AXIS));
-        panel.add(new JLabel("Library choice:"));
-        panel.add(panel2);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JPanel panel1 = new JPanel();
+        JButton btn = new JButton("Roadrunner");
+        btn.addActionListener(e -> {
+            libraries.clear();
+            libraries.add(new Library("com.acmerobotics.roadrunner:ftc", "0.1.22"));
+            libraries.add(new Library("com.acmerobotics.roadrunner:core", "1.0.1"));
+            update();
+        });
+        JButton btn2 = new JButton("Pedro Pathing");
+        btn2.addActionListener(e -> {
+            libraries.clear();
+            libraries.add(new Library("com.pedropathing:pedro", "1.0.9"));
+            update();
+        });
+        panel1.add(new JLabel("Quickstart:"));
+        panel1.add(btn);
+        panel1.add(btn2);
+        panel.add(panel1);
+        JLabel lbl = new JLabel("The following libraries will be added:");
+        // This is needed to center things
+        // todo: why????
+        JPanel fake = new JPanel();
+        fake.add(lbl);
+        panel.add(fake);
+        panel.add(dropdown);
+        JButton btna = new JButton("Add another library");
+        btna.addActionListener(e -> {
+            libraries.add(new Library());
+            update();
+        });
+        JPanel fake2 = new JPanel();
+        fake2.add(btna);
+        panel.add(fake2);
         return panel;
+    }
+    private void update() {
+        dropdown.removeAll();
+        dropdown.setLayout(new BoxLayout(dropdown, BoxLayout.Y_AXIS));
+        for (Library library: libraries) {
+            JTextField lib = new JTextField();
+            JTextField version = new JTextField();
+            JButton btn = new JButton("-");
+            btn.setForeground(JBColor.RED);
+            btn.addActionListener(e -> {
+                libraries.remove(library);
+                update();
+            });
+            btn.setPreferredSize(new Dimension(20, 30));
+            lib.getDocument().addDocumentListener(new DocumentListener() {
+                @Override
+                public void insertUpdate(DocumentEvent e) {
+                    library.library = lib.getText();
+                }
+
+                @Override
+                public void removeUpdate(DocumentEvent e) {
+                    // empty
+                }
+
+                @Override
+                public void changedUpdate(DocumentEvent e) {
+                    library.library = lib.getText();
+                }
+            });
+            version.getDocument().addDocumentListener(new DocumentListener() {
+                @Override
+                public void insertUpdate(DocumentEvent e) {
+                    library.version = version.getText();
+                }
+
+                @Override
+                public void removeUpdate(DocumentEvent e) {
+                    // empty
+                }
+
+                @Override
+                public void changedUpdate(DocumentEvent e) {
+                    library.version = version.getText();
+                }
+            });
+            lib.setText(library.library);
+            version.setText(library.version);
+            lib.setPreferredSize(new Dimension(250, 30));
+            version.setPreferredSize(new Dimension(60,30));
+            JPanel foo = new JPanel();
+            foo.add(lib);
+            foo.add(new JLabel("v"));
+            foo.add(version);
+            foo.add(btn);
+            dropdown.add(foo);
+        }
+        dropdown.revalidate();
+        dropdown.repaint();
+        Window dialog = SwingUtilities.getWindowAncestor(dropdown);
+        if (dialog != null) dialog.pack();
     }
 }
 
@@ -153,22 +252,15 @@ public class AddGradleDependency extends AnAction {
             ref2 = PsiTreeUtil.findChildrenOfType(statement, GrMethodCallExpression.class).iterator().next().getCallReference();
         }*/
 
-        boolean selected = dialog.libraryChoice.getElements().nextElement().isSelected();
         GrClosableBlock block = ((GrMethodCall) ref.getElement()).getClosureArguments()[0];
         GrClosableBlock block2 = ((GrMethodCall) ref2.getElement()).getClosureArguments()[0];
 
         WriteCommandAction.runWriteCommandAction(project, () -> {
-            if (selected) {
-                block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.brott.dev/'"), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.roadrunner:ftc:0.1.22\""), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.roadrunner:core:1.0.1\""), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.roadrunner:actions:1.0.1\""), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.dashboard:dashboard:0.4.16\""), null);
-            } else {
-                block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.brott.dev/'"), null);
-                block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.pedropathing.com/'"), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.pedropathing:pedro:1.0.9\""), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.dashboard:dashboard:0.4.16\""), null);
+            // TODO refine
+            block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.brott.dev/'"), null);
+            block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.pedropathing.com/'"), null);
+            for (Library library: dialog.libraries) {
+                block.addStatementBefore(fac.createStatementFromText("implementation \"" + library.library + ":" + library.version + "\""), null);
             }
         });
     }
