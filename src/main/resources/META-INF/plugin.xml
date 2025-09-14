@@ -15,7 +15,7 @@
                 description="Adds an FTC OpMode">
             <add-to-group group-id="NewGroup" anchor="after" relative-to-action="NewFile"/>
         </action>
-        <action id="com.plugin.Hardware" class="com.plugin.Hardware" text="Add FTC Hardware"
+        <action id="com.plugin.MakeHardware" class="com.plugin.MakeHardware" text="Add FTC Hardware"
                 description="Adds FTC Hardware as a class field on a class">
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="ShowIntentionsGroup"/>
         </action>
@@ -24,6 +24,18 @@
             <add-to-group group-id="EditorPopupMenu"
                 anchor="after"
                 relative-to-action="ShowIntentionsGroup"/>
+        </action>
+        <action id="com.plugin.MakeFSM" class="com.plugin.MakeFSM" text="Add FSM"
+                description="Adds an FSM as a class field">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="ShowIntentionsGroup"/>
+        </action>
+        <action id="com.plugin.UseFSM" class="com.plugin.UseFSM" text="Use FSM"
+                description="Adds a switch case to iterate over a FSM">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="ShowIntentionsGroup"/>
+        </action>
+        <action id="com.plugin.UseTemplate" class="com.plugin.UseTemplate" text="Use Template"
+                description="Uses a template that can autofill files in a project.">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
         </action>
     </actions>
 </idea-plugin>
