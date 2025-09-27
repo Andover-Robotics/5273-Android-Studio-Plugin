@@ -1,8 +1,8 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.plugin</id>
-    <name>BLANK</name>
-    <vendor>something something</vendor>
+    <name>5273 Android Studio Plugin</name>
+    <vendor>5273 ARC Thunder</vendor>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.java</depends>
