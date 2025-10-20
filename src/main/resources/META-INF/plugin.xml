@@ -1,11 +1,11 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.plugin</id>
-    <name>BLANK</name>
-    <vendor>something something</vendor>
+    <name>5273 Android Studio Plugin</name>
+    <vendor>5273 ARC Thunder</vendor>
 
     <depends>com.intellij.modules.platform</depends>
-    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.java</depends>
     <depends>org.intellij.groovy</depends>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -15,15 +15,27 @@
                 description="Adds an FTC OpMode">
             <add-to-group group-id="NewGroup" anchor="after" relative-to-action="NewFile"/>
         </action>
-        <action id="com.plugin.Hardware" class="com.plugin.Hardware" text="Add FTC Hardware"
+        <action id="com.plugin.MakeHardware" class="com.plugin.MakeHardware" text="Add FTC Hardware"
                 description="Adds FTC Hardware as a class field on a class">
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="ShowIntentionsGroup"/>
         </action>
-        <action id="co.plugin.EditGradleFile" class="com.plugin.EditGradleFile" text="ShowGradleContents"
-                description="Shows the contents of the gradle file in teamcode">
+        <action id="com.plugin.AddGradleDependency" class="com.plugin.AddGradleDependency" text="Add Gradle Dependency"
+                description="Adds a Gradle dependency">
             <add-to-group group-id="EditorPopupMenu"
                 anchor="after"
                 relative-to-action="ShowIntentionsGroup"/>
+        </action>
+        <action id="com.plugin.MakeFSM" class="com.plugin.MakeFSM" text="Add FSM"
+                description="Adds an FSM as a class field">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="ShowIntentionsGroup"/>
+        </action>
+        <action id="com.plugin.UseFSM" class="com.plugin.UseFSM" text="Use FSM"
+                description="Adds a switch case to iterate over a FSM">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="ShowIntentionsGroup"/>
+        </action>
+        <action id="com.plugin.UseTemplate" class="com.plugin.UseTemplate" text="Use Template"
+                description="Uses a template that can autofill files in a project.">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
         </action>
     </actions>
 </idea-plugin>

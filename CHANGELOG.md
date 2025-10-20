@@ -4,13 +4,7 @@
 
 ## [Unreleased]
 
-## [0.0.1] - ???
-
 ### Added
-- adds something
-
-### Removed
-- what is there to remove
-
-### Changed
-- a bunch of files or something like that
+- Add FSM, FTC Hardware, and OpMode shortcuts
+- Add shortcut to add Gradle dependencies
+- Add primitive template system
