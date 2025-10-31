@@ -2,10 +2,12 @@ package com.plugin;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.ui.TextBrowseFolderListener;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,8 +33,8 @@ class GetTemplate extends DialogWrapper {
     protected @Nullable JComponent createCenterPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        pathChooser.addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFolderDescriptor());
-        templateChooser.addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFileDescriptor());
+        pathChooser.addBrowseFolderListener(new TextBrowseFolderListener(FileChooserDescriptorFactory.createSingleFolderDescriptor()));
+        templateChooser.addBrowseFolderListener(new TextBrowseFolderListener(FileChooserDescriptorFactory.createSingleFileDescriptor()));
         JPanel pathChoose = new JPanel();
         pathChoose.add(new JLabel("Choose the base directory for the template:"));
         pathChoose.add(pathChooser);
