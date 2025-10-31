@@ -33,6 +33,9 @@ class GetTemplate extends DialogWrapper {
     protected @Nullable JComponent createCenterPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        // createSingleFileDescriptor / createSingleFolderDescriptor are considered deprecated / obsolete in IDEA versions starting from 251.23536.24
+        // However, the preferred method is not available for IDEA versions below it, so there's not really a better way other than dropping support for those versions
+        // which is not really a good idea since the FTC SDK still works with those versions
         pathChooser.addBrowseFolderListener(new TextBrowseFolderListener(FileChooserDescriptorFactory.createSingleFolderDescriptor()));
         templateChooser.addBrowseFolderListener(new TextBrowseFolderListener(FileChooserDescriptorFactory.createSingleFileDescriptor()));
         JPanel pathChoose = new JPanel();
