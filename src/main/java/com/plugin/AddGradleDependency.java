@@ -11,7 +11,6 @@ import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.util.PsiTreeUtil;
-import com.intellij.ui.JBColor;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyFile;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyPsiElementFactory;
@@ -22,9 +21,6 @@ import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.path.GrM
 import org.jetbrains.plugins.groovy.lang.resolve.api.GroovyMethodCallReference;
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import java.awt.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,15 +47,16 @@ class Dialog extends DialogWrapper {
 
 public class AddGradleDependency extends AnAction {
     private static PsiFile getGradleFile(Project project) {
-
-        String fullPath = Paths.get(project.getBasePath(), "TeamCode/build.gradle").toString();
+        String path = project.getBasePath();
+        if (path == null) return null;
+        String fullPath = Paths.get(path, "TeamCode/build.gradle").toString();
 
         String fileUrl = "file://" + fullPath.replace("\\", "/");
 
         VirtualFile file = VirtualFileManager.getInstance().findFileByUrl(fileUrl);
 
         if (file == null) {
-            Messages.showErrorDialog(project, "build.gradle not found at TeamCode/build.gradle", "Error");
+            Messages.showErrorDialog(project, "File build.gradle not found at TeamCode/build.gradle", "Error");
             return null;
         }
 

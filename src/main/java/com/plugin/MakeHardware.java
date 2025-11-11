@@ -1,6 +1,5 @@
 package com.plugin;
 
-import com.esotericsoftware.kryo.kryo5.util.Null;
 import com.intellij.lang.java.JavaLanguage;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -15,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Objects;
 
 class HardwareOptions extends DialogWrapper {
     ButtonGroup className = new ButtonGroup();
@@ -83,7 +83,7 @@ public class MakeHardware extends AnAction {
                     JavaLanguage.INSTANCE,
                     "import " + name + ";class Dummy{}"
             );
-            PsiImportStatement cls = dummyFile.getImportList().getImportStatements()[0];
+            PsiImportStatement cls = Objects.requireNonNull(dummyFile.getImportList()).getImportStatements()[0];
             if (list != null) list.add(cls);
             else file.addAfter(cls, null);
         }
@@ -145,8 +145,6 @@ public class MakeHardware extends AnAction {
         if (!result) return;
 
         boolean isServo = options.className.getElements().nextElement().isSelected();
-        WriteCommandAction.runWriteCommandAction(proj, () -> {
-            addHardware(proj, cls, isServo, options.fieldName.getText(), options.deviceName.getText());
-        });
+        WriteCommandAction.runWriteCommandAction(proj, () -> addHardware(proj, cls, isServo, options.fieldName.getText(), options.deviceName.getText()));
     }
 }

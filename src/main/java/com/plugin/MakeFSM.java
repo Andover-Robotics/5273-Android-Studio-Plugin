@@ -141,8 +141,6 @@ public class MakeFSM extends AnAction {
         boolean result = dialog.showAndGet();
         if (!result) return;
 
-        WriteCommandAction.runWriteCommandAction(proj, () -> {
-            addFSM(proj, cls, dialog.fsmName.getText(), dialog.fsmElements);
-        });
+        WriteCommandAction.runWriteCommandAction(proj, () -> addFSM(proj, cls, dialog.fsmName.getText(), dialog.fsmElements));
     }
 }

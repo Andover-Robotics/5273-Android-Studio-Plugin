@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFileFactory;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.util.Enumeration;
@@ -35,7 +36,7 @@ public class MakeOpMode extends AnAction {
     }
 
     @Override
-    public void actionPerformed(AnActionEvent e) {
+    public void actionPerformed(@NotNull AnActionEvent e) {
         OpModeDialog dialog = new OpModeDialog();
         boolean status = dialog.showAndGet();
         if (!status) return;
@@ -47,32 +48,28 @@ public class MakeOpMode extends AnAction {
         if (project == null) return;
 
         PsiElement element = e.getData(CommonDataKeys.PSI_ELEMENT);
-        if (!(element instanceof PsiDirectory)) return;
-        PsiDirectory dir = (PsiDirectory) element;
+        if (!(element instanceof PsiDirectory dir)) return;
 
         boolean teleopSelected = getFirstSelected(dialog.opmodeType);
         boolean isJava = getFirstSelected(dialog.languageType);
         boolean isLinear = getFirstSelected(dialog.classType);
 
-        WriteCommandAction.runWriteCommandAction(project, () -> {
-            addFile(
-                    name,
-                    dir,
-                    project,
-                    dialog.opmodeName.getText(),
-                    dialog.groupName.getText(),
-                    teleopSelected,
-                    isJava,
-                    isLinear
-            );
-        });
+        WriteCommandAction.runWriteCommandAction(project, () -> addFile(
+                name,
+                dir,
+                project,
+                dialog.opmodeName.getText(),
+                dialog.groupName.getText(),
+                teleopSelected,
+                isJava,
+                isLinear
+        ));
     }
 
     private boolean getFirstSelected(ButtonGroup group) {
         Enumeration<AbstractButton> buttons = group.getElements();
         while (buttons.hasMoreElements()) {
-            AbstractButton button = buttons.nextElement();
-            return button.isSelected();
+            if (buttons.nextElement().isSelected()) return true;
         }
         return false;
     }

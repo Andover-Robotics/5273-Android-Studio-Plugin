@@ -2,7 +2,6 @@ package com.plugin;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
@@ -19,12 +18,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 
 class GetTemplate extends DialogWrapper {
-    private final Project project;
     public final TextFieldWithBrowseButton pathChooser = new TextFieldWithBrowseButton();
     public final TextFieldWithBrowseButton templateChooser = new TextFieldWithBrowseButton();
-    public GetTemplate(Project proj) {
+    public GetTemplate() {
         super(true);
-        project = proj;
         setTitle("Use Template");
         init();
     }
@@ -150,7 +147,7 @@ public class UseTemplate extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project proj = e.getProject();
         if (proj == null) return;
-        GetTemplate getTemplate = new GetTemplate(proj);
+        GetTemplate getTemplate = new GetTemplate();
         boolean result = getTemplate.showAndGet();
         if (!result) return;
         String path = getTemplate.templateChooser.getText();
