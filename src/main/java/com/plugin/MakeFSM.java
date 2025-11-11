@@ -3,13 +3,11 @@ package com.plugin;
 import com.intellij.lang.java.JavaLanguage;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.*;
-import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.ui.JBColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -100,17 +98,6 @@ class FSMDialog extends DialogWrapper {
 }
 
 public class MakeFSM extends AnAction {
-    private boolean isRealSourceClass(PsiClass psiClass) {
-        return !psiClass.isInterface();
-    }
-    private @Nullable PsiClass getClassBase(PsiElement el) {
-        PsiClass base = el instanceof PsiClass ? (PsiClass) el : PsiTreeUtil.getParentOfType(el, PsiClass.class);
-        while (base != null && !isRealSourceClass(base)) {
-            base = PsiTreeUtil.getParentOfType(base, PsiClass.class);
-        }
-        return base;
-    }
-
     private void addFSM(Project proj, PsiClass cls, String fsmName, ArrayList<String> fsmElements) {
         StringBuilder enumContents = new StringBuilder("enum " + fsmName + " {");
         for (String item: fsmElements) {
@@ -129,9 +116,9 @@ public class MakeFSM extends AnAction {
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project proj = e.getProject();
-        PsiElement res = e.getData(CommonDataKeys.PSI_ELEMENT);
+        PsiElement res = Utilities.getPsiElement(e);
         if (proj == null || res == null) return;
-        PsiClass cls = getClassBase(res);
+        PsiClass cls = Utilities.getClassBase(res);
         if (cls == null) {
             Messages.showErrorDialog("No surrounding class is available", "Failed to Add FSM");
             return;

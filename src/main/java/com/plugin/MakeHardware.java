@@ -3,14 +3,11 @@ package com.plugin;
 import com.intellij.lang.java.JavaLanguage;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.*;
-import com.intellij.psi.util.PsiTreeUtil;
-import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
@@ -56,18 +53,6 @@ class HardwareOptions extends DialogWrapper {
 }
 
 public class MakeHardware extends AnAction {
-
-    private boolean isRealSourceClass(PsiClass psiClass) {
-        return !psiClass.isInterface();
-    }
-    private @Nullable PsiClass getClassBase(PsiElement el) {
-        PsiClass base = el instanceof PsiClass ? (PsiClass) el : PsiTreeUtil.getParentOfType(el, PsiClass.class);
-        while (base != null && !isRealSourceClass(base)) {
-            base = PsiTreeUtil.getParentOfType(base, PsiClass.class);
-        }
-        return base;
-    }
-
     private void ensureImport(Project project, PsiFile file, String name) {
         PsiImportList list = ((PsiJavaFile) file).getImportList();
         boolean needImport = list == null;
@@ -132,9 +117,9 @@ public class MakeHardware extends AnAction {
     @Override
     public void actionPerformed(AnActionEvent e) {
         Project proj = e.getProject();
-        PsiElement res = e.getData(CommonDataKeys.PSI_ELEMENT);
+        PsiElement res = Utilities.getPsiElement(e);
         if (proj == null || res == null) return;
-        PsiClass cls = getClassBase(res);
+        PsiClass cls = Utilities.getClassBase(res);
         if (cls == null) {
             Messages.showErrorDialog("No surrounding class is available", "Failed to Create FTC Hardware");
             return;

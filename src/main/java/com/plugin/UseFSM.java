@@ -2,15 +2,12 @@ package com.plugin;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.command.WriteCommandAction;
-import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.*;
-import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,26 +34,12 @@ class UseFSMDialog extends DialogWrapper {
 }
 
 public class UseFSM extends AnAction {
-    private boolean isRealSourceClass(PsiClass psiClass) {
-        return !psiClass.isInterface();
-    }
-    private @Nullable PsiClass getClassBase(PsiElement el) {
-        PsiClass base = el instanceof PsiClass ? (PsiClass) el : PsiTreeUtil.getParentOfType(el, PsiClass.class);
-        while (base != null && !isRealSourceClass(base)) {
-            base = PsiTreeUtil.getParentOfType(base, PsiClass.class);
-        }
-        return base;
-    }
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project proj = e.getProject();
-        Editor editor = e.getData(CommonDataKeys.EDITOR);
-        PsiFile file = e.getData(CommonDataKeys.PSI_FILE);
-        if (proj == null || editor == null || file == null) return;
-        int offset = editor.getCaretModel().getOffset();
-        PsiElement ele = file.findElementAt(offset);
-        if (ele == null) return;
-        PsiClass cls = getClassBase(ele);
+        PsiElement ele = Utilities.getPsiElement(e);
+        if (proj == null || ele == null) return;
+        PsiClass cls = Utilities.getClassBase(ele);
         if (cls == null) {
             Messages.showErrorDialog("No surrounding class is available", "Failed to Use FSM");
             return;
