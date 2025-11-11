@@ -4,6 +4,7 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     id("java") // Java support
+    alias(libs.plugins.kotlin) // Kotlin support
     alias(libs.plugins.intelliJPlatform) // IntelliJ Platform Gradle Plugin
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
@@ -12,6 +13,15 @@ plugins {
 
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
+
+// This is necessary because JVM versions >21 are too new for AI 242, which causes crashes over Java class file versions
+// Configuring the Project SDK wasn't good enough for some reason (??????)
+// This also somehow didn't bring up the other issue so it gets even more confusing
+
+// Set the JVM language level used to build the project.
+kotlin {
+    jvmToolchain(21)
+}
 
 // Configure project's dependencies
 repositories {
