@@ -29,128 +29,23 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 
-class Library {
-    public String library;
-    public String version;
-
-    public Library() {
-        this.library = "";
-        this.version = "";
-    }
-    public Library(String library, String version) {
-        this.library = library;
-        this.version = version;
-    }
-}
-
 class Dialog extends DialogWrapper {
-    public ArrayList<Library> libraries = new ArrayList<>();
-    private final JPanel dropdown = new JPanel();
-    private final JPanel panel = new JPanel();
+    final JCheckBox roadrunner = new JCheckBox("Roadrunner");
+    final JCheckBox pedro = new JCheckBox("Pedro");
     Dialog() {
         super(true);
-        setTitle("Add Dependencies");
+        setTitle("Add Libraries");
         init();
     }
-
     @Override
-    protected @Nullable JComponent createCenterPanel() {
+    public JPanel createCenterPanel() {
+        JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         JPanel panel1 = new JPanel();
-        JButton btn = new JButton("Roadrunner");
-        btn.addActionListener(e -> {
-            libraries.clear();
-            libraries.add(new Library("com.acmerobotics.roadrunner:ftc", "0.1.22"));
-            libraries.add(new Library("com.acmerobotics.roadrunner:core", "1.0.1"));
-            update();
-        });
-        JButton btn2 = new JButton("Pedro Pathing");
-        btn2.addActionListener(e -> {
-            libraries.clear();
-            libraries.add(new Library("com.pedropathing:pedro", "1.0.9"));
-            update();
-        });
-        panel1.add(new JLabel("Quickstart:"));
-        panel1.add(btn);
-        panel1.add(btn2);
+        panel1.add(roadrunner);
+        panel1.add(pedro);
         panel.add(panel1);
-        JLabel lbl = new JLabel("The following libraries will be added:");
-        // This is needed to center things
-        // todo: why????
-        JPanel fake = new JPanel();
-        fake.add(lbl);
-        panel.add(fake);
-        panel.add(dropdown);
-        JButton btna = new JButton("Add another library");
-        btna.addActionListener(e -> {
-            libraries.add(new Library());
-            update();
-        });
-        JPanel fake2 = new JPanel();
-        fake2.add(btna);
-        panel.add(fake2);
         return panel;
-    }
-    private void update() {
-        dropdown.removeAll();
-        dropdown.setLayout(new BoxLayout(dropdown, BoxLayout.Y_AXIS));
-        for (Library library: libraries) {
-            JTextField lib = new JTextField();
-            JTextField version = new JTextField();
-            JButton btn = new JButton("-");
-            btn.setForeground(JBColor.RED);
-            btn.addActionListener(e -> {
-                libraries.remove(library);
-                update();
-            });
-            btn.setPreferredSize(new Dimension(20, 30));
-            lib.getDocument().addDocumentListener(new DocumentListener() {
-                @Override
-                public void insertUpdate(DocumentEvent e) {
-                    library.library = lib.getText();
-                }
-
-                @Override
-                public void removeUpdate(DocumentEvent e) {
-                    // empty
-                }
-
-                @Override
-                public void changedUpdate(DocumentEvent e) {
-                    library.library = lib.getText();
-                }
-            });
-            version.getDocument().addDocumentListener(new DocumentListener() {
-                @Override
-                public void insertUpdate(DocumentEvent e) {
-                    library.version = version.getText();
-                }
-
-                @Override
-                public void removeUpdate(DocumentEvent e) {
-                    // empty
-                }
-
-                @Override
-                public void changedUpdate(DocumentEvent e) {
-                    library.version = version.getText();
-                }
-            });
-            lib.setText(library.library);
-            version.setText(library.version);
-            lib.setPreferredSize(new Dimension(250, 30));
-            version.setPreferredSize(new Dimension(60,30));
-            JPanel foo = new JPanel();
-            foo.add(lib);
-            foo.add(new JLabel("v"));
-            foo.add(version);
-            foo.add(btn);
-            dropdown.add(foo);
-        }
-        dropdown.revalidate();
-        dropdown.repaint();
-        Window dialog = SwingUtilities.getWindowAncestor(dropdown);
-        if (dialog != null) dialog.pack();
     }
 }
 
@@ -245,10 +140,16 @@ public class AddGradleDependency extends AnAction {
         }
 
         WriteCommandAction.runWriteCommandAction(project, () -> {
-            block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.brott.dev/'"), null);
-            block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.pedropathing.com/'"), null);
-            for (Library library: dialog.libraries) {
-                block.addStatementBefore(fac.createStatementFromText("implementation \"" + library.library + ":" + library.version + "\""), null);
+            if (dialog.roadrunner.isSelected()) {
+                block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.brott.dev/'"), null);
+                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.roadrunner:ftc:0.1.25\""), null);
+                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.roadrunner:core:1.0.1\""), null);
+                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.roadrunner:actions:1.0.1\""), null);
+                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.dashboard:dashboard:0.5.1\""), null);
+            }
+            if (dialog.pedro.isSelected()) {
+                block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.pedropathing.com/'"), null);
+                block.addStatementBefore(fac.createStatementFromText("implementation \"com.pedropathing:pedro:1.0.9\""), null);
             }
             if (statement != null) file.addStatementBefore(statement, null);
             if (statement2 != null) block3.addStatementBefore(statement2, null);
