@@ -3,6 +3,8 @@ package com.plugin;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.command.WriteCommandAction;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
@@ -11,6 +13,7 @@ import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.util.PsiTreeUtil;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyFile;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyPsiElementFactory;
@@ -21,9 +24,16 @@ import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.path.GrM
 import org.jetbrains.plugins.groovy.lang.resolve.api.GroovyMethodCallReference;
 
 import javax.swing.*;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 class Dialog extends DialogWrapper {
     final JCheckBox roadrunner = new JCheckBox("Roadrunner");
@@ -46,10 +56,8 @@ class Dialog extends DialogWrapper {
 }
 
 public class AddGradleDependency extends AnAction {
-    private static PsiFile getGradleFile(Project project) {
-        String path = project.getBasePath();
-        if (path == null) return null;
-        String fullPath = Paths.get(path, "TeamCode/build.gradle").toString();
+    private static PsiFile getGradleFile(Project project, String basePath) {
+        String fullPath = Paths.get(basePath, "TeamCode/build.gradle").toString();
 
         String fileUrl = "file://" + fullPath.replace("\\", "/");
 
@@ -75,6 +83,59 @@ public class AddGradleDependency extends AnAction {
         return null;
     }
 
+    private String removeBeginning(String path) {
+        String[] segments = path.split(Pattern.quote("/"), -1);
+        segments[0] = "";
+        return String.join("/", segments);
+    }
+
+    private void importRoadrunner(String basePath, ProgressIndicator progressIndicator) {
+        URL url;
+        try {
+            byte[] buffer = new byte[1024];
+            File fullPath = new File(basePath);
+            String destDirPath = fullPath.getCanonicalPath();
+            // This is the latest version of the Roadrunner quickstart that I know of
+            url = URI.create("https://github.com/acmerobotics/road-runner-quickstart/archive/6e63a7792e9bb6958798bf46fc03d84765b50c51.zip").toURL();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            ZipInputStream reader = new ZipInputStream(connection.getInputStream());
+            ZipEntry entry = reader.getNextEntry();
+            progressIndicator.checkCanceled();
+
+            while (entry != null) {
+                String zipPath = removeBeginning(entry.getName());
+                File newFile = new File(fullPath, zipPath);
+                String destFilePath = newFile.getCanonicalPath();
+
+                if (!destDirPath.equals(destFilePath) && zipPath.startsWith("/TeamCode/src/main/java/org/firstinspires/ftc/teamcode")) {
+                    progressIndicator.setText("Extracting " + newFile.getPath());
+                    if (!destFilePath.startsWith(destDirPath + File.separator)) {
+                        throw new RuntimeException("Entry is outside of the target dir: " + destFilePath);
+                    }
+                    if (entry.isDirectory()) {
+                        if (!newFile.isDirectory() && !newFile.mkdirs()) {
+                            throw new RuntimeException("Failed to create zip directory");
+                        }
+                    } else {
+                        File parent = newFile.getParentFile();
+                        if (!parent.isDirectory() && !parent.mkdirs()) {
+                            throw new IOException("Failed to create directory " + parent);
+                        }
+
+                        FileOutputStream fos = new FileOutputStream(newFile);
+                        int len;
+                        while ((len = reader.read(buffer)) > 0) {
+                            fos.write(buffer, 0, len);
+                        }
+                        fos.close();
+                    }
+                }
+                progressIndicator.checkCanceled();
+                entry = reader.getNextEntry();
+            }
+        } catch (IOException ignored) {}
+    }
+
     @Override
     public void actionPerformed(AnActionEvent e) {
         Project project = e.getProject();
@@ -82,7 +143,11 @@ public class AddGradleDependency extends AnAction {
             Messages.showErrorDialog("Project is not available.", "Error");
             return;
         }
-        PsiFile gradleFile = getGradleFile(project);
+        String basePath = project.getBasePath();
+        if (basePath == null) {
+            return;
+        }
+        PsiFile gradleFile = getGradleFile(project, basePath);
         if (gradleFile == null) {
             return;
         }
@@ -134,6 +199,17 @@ public class AddGradleDependency extends AnAction {
             block3 = null;
             statement2 = null;
             block2 = ((GrMethodCall) ref2.getElement()).getClosureArguments()[0];
+        }
+
+        if (dialog.roadrunner.isSelected()) {
+            // TODO use Kotlin so that way coroutines can be used instead of "Obsolete API"
+            new Task.Backgroundable(project, "Importing roadrunner") {
+                @Override
+                public void run(@NotNull ProgressIndicator progressIndicator) {
+                    progressIndicator.setIndeterminate(true);
+                    importRoadrunner(basePath, progressIndicator);
+                }
+            }.setCancelText("Cancel Import").queue();
         }
 
         WriteCommandAction.runWriteCommandAction(project, () -> {
