@@ -14,6 +14,10 @@ plugins {
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
+// Abstracted test library versions to avoid magic strings
+val junitVersion = "5.9.3"
+val mockitoVersion = "4.11.0"
+
 // This is necessary because JVM versions >21 are too new for AI 242, which causes crashes over Java class file versions
 // Configuring the Project SDK wasn't good enough for some reason (??????)
 // This also somehow didn't bring up the other issue so it gets even more confusing
@@ -35,8 +39,16 @@ repositories {
 
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
-    testImplementation(libs.junit)
+    // JUnit 5 (Jupiter) API + engine. Engine is required at test runtime.
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
+
+    // OpenTest4J is useful for assertions interoperability (kept if needed by other libs)
     testImplementation(libs.opentest4j)
+
+    // Mockito for mocking in unit tests. Use mockito-inline if you need to mock final classes.
+    testImplementation("org.mockito:mockito-core:$mockitoVersion")
+    // testImplementation("org.mockito:mockito-inline:$mockitoVersion") // uncomment if mocking finals is required
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
@@ -132,6 +144,11 @@ tasks {
 
     publishPlugin {
         dependsOn(patchChangelog)
+    }
+
+    // Ensure unit tests run on JUnit Platform (JUnit 5)
+    test {
+        useJUnitPlatform()
     }
 }
 
