@@ -1,4 +1,4 @@
-# 5273-Android-Studio-Plugin
+# Mjolnir for FTC
 An [Android Studio](https://developer.android.com/studio) plugin intended to make writing [FTC](https://www.firstinspires.org/robotics/ftc) code easier. Made by Team **5273 ARC Thunder**
 
 <!-- this is used to build the plugin, don't remove these comments -->
