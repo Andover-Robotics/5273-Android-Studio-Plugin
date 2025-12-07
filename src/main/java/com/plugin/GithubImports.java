@@ -1,4 +1,3 @@
-// src/main/java/com/plugin/GithubImports.java
 package com.plugin;
 
 import com.intellij.openapi.progress.ProgressIndicator;
