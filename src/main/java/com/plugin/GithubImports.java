@@ -2,8 +2,6 @@ package com.plugin;
 
 import com.intellij.openapi.progress.ProgressIndicator;
 
-import org.jsoup.Progress;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -20,16 +18,7 @@ public class GithubImports {
     // Constants to avoid magic numbers / strings
     private static final int BUFFER_SIZE = 8 * 1024;
 
-    // Roadrunner-specific defaults retained for compatibility with existing callers
-    private static final String ROADRUNNER_ZIP_URL = "https://github.com/acmerobotics/road-runner-quickstart/archive/6e63a7792e9bb6958798bf46fc03d84765b50c51.zip";
-    private static final String ROADRUNNER_SRC_PATH = "TeamCode/src/main/java/org/firstinspires/ftc/teamcode";
-    private static final String ROADRUNNER_DEST_PATH = "TeamCode/src/main/java/org/firstinspires/ftc/teamcode";
-
-    private static final String PEDRO_ZIP_URL = "https://github.com/Pedro-Pathing/Quickstart/archive/refs/tags/v2.0.4.zip";
-    private static final String PEDRO_SRC_PATH = "TeamCode/src/main/java/org/firstinspires/ftc/teamcode";
-    private static final String PEDRO_DEST_PATH = "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/pedroPathing";
-
-    //removes first little sgemgent from the zip path
+    // removes first little segment from the zip path
     private static String removeFirstSegment(String path) {
         if (path == null || path.isEmpty()) return "";
         String[] segments = path.split(Pattern.quote("/"), -1);
@@ -51,7 +40,7 @@ public class GithubImports {
      Generic importer: download a ZIP from zipUrl, strip the archive's top-level folder and import only entries under srcPathInZip into the project's basePath/destRelativePath.
      basePath=The project base path (as in Project.getBasePath()).
      zipUrl=The URL of the zip to download.
-     srcPathInZip=Path inside the zip to import no leaedig slass
+     srcPathInZip=Path inside the zip to import (no leading slashes)
      destRelativePath=Destination path relative to basePath where files will be created.
      progressIndicator=ProgressIndicator for reporting and cancellation.
      */
@@ -98,7 +87,7 @@ public class GithubImports {
                         }
                     }
 
-                    //relative path
+                    // relative path
                     String relativeInside;
                     if (srcNormalized.isEmpty()) {
                         relativeInside = entryNormalized;
@@ -152,13 +141,5 @@ public class GithubImports {
             // Surface failure so callers / the user can see it
             throw new RuntimeException("Failed to import from zip: " + e.getMessage(), e);
         }
-    }
-
-    // roadrunner importer
-    public static void importRoadrunner(String basePath, ProgressIndicator progressIndicator) {
-        importFromZip(basePath, ROADRUNNER_ZIP_URL, ROADRUNNER_SRC_PATH, ROADRUNNER_DEST_PATH, progressIndicator);
-    }
-    public static void importPedro(String basePath, ProgressIndicator progressIndicator) {
-        importFromZip(basePath, PEDRO_ZIP_URL, PEDRO_SRC_PATH, PEDRO_DEST_PATH, progressIndicator);
     }
 }

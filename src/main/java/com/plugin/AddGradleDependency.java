@@ -28,24 +28,27 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class AddGradleDependency extends AnAction {
-    // Index of the closure block child within a statement node (abstrcated cause im sigma)
+    // Index of the closure block child within a statement node (abstracted cause im sigma)
     private static final int CLOSURE_BLOCK_CHILD_INDEX = 2;
 
+    /**
+     * @param id                 unique id
+     * @param displayName        shown in UI
+     * @param mavenUrl           repository URL to add (nullable)
+     * @param dependencyLines    lines to add to dependencies block
+     * @param zipUrl             optional zip URL to import from (nullable)
+     * @param zipSourcePath      path inside zip to pull files from (nullable)
+     * @param zipDestinationPath destination relative to project base (nullable)
+     * @param manualSteps        user-facing manual next steps for this library (nullable)
+     */
     // Small DTO to hold all metadata for a library so adding new libraries is a single change.
-    private static final class LibraryDescriptor {
-        final String id; // unique id
-        final String displayName; // shown in UI
-        final String mavenUrl; // repository URL to add (nullable)
-        final List<String> dependencyLines; // lines to add to dependencies block
-        final String zipUrl; // optional zip URL to import from (nullable)
-        final String zipSourcePath; // path inside zip to pull files from (nullable)
-        final String zipDestinationPath; // destination relative to project base (nullable)
-        final String manualSteps; // user-facing manual next steps for this library (nullable)
-
-        LibraryDescriptor(String id, String displayName,
-                          String mavenUrl, List<String> dependencyLines,
-                          String zipUrl, String zipSourcePath, String zipDestinationPath,
-                          String manualSteps) {
+    private record LibraryDescriptor(String id, String displayName, String mavenUrl, List<String> dependencyLines,
+                                     String zipUrl, String zipSourcePath, String zipDestinationPath,
+                                     String manualSteps) {
+        private LibraryDescriptor(String id, String displayName,
+                                  String mavenUrl, List<String> dependencyLines,
+                                  String zipUrl, String zipSourcePath, String zipDestinationPath,
+                                  String manualSteps) {
             this.id = id;
             this.displayName = displayName;
             this.mavenUrl = mavenUrl;
@@ -58,50 +61,41 @@ public class AddGradleDependency extends AnAction {
     }
 
     // Registry of libraries, rn its just roadrunner and pedro
-    private static final List<LibraryDescriptor> LIBRARY_REGISTRY;
+    private static final List<LibraryDescriptor> LIBRARY_REGISTRY = List.of(new LibraryDescriptor(
+            "roadrunner",
+            "Roadrunner",
+            "https://maven.brott.dev/",
+            Arrays.asList(
+                    "implementation \"com.acmerobotics.roadrunner:ftc:0.1.25\"",
+                    "implementation \"com.acmerobotics.roadrunner:core:1.0.1\"",
+                    "implementation \"com.acmerobotics.roadrunner:actions:1.0.1\"",
+                    "implementation \"com.acmerobotics.dashboard:dashboard:0.5.1\""
+            ),
+            // zip import info (optional) - keep existing quickstart sha URL
+            "https://github.com/acmerobotics/road-runner-quickstart/archive/6e63a7792e9bb6958798bf46fc03d84765b50c51.zip",
+            "TeamCode/src/main/java/org/firstinspires/ftc/teamcode",
+            "TeamCode/src/main/java/org/firstinspires/ftc/teamcode",
+            // manual steps shown to user after operation
+            "1) Perform a Gradle sync (press 'Sync Now' in the blue banner).\n" +
+                    "2) If the import task added any resources, verify they appear correctly in your project."
+    ), new LibraryDescriptor(
+            "pedro",
+            "PedroPathing",
+            "https://mymaven.bylazar.com/releases",
+            Arrays.asList(
+                    "implementation 'com.pedropathing:ftc:2.0.4'",
+                    "implementation 'com.pedropathing:telemetry:1.0.0'",
+                    "implementation 'com.bylazar:fullpanels:1.0.6'"
+            ),
+            // No zip import for Pedro in the official instructions, keep null
+            null, null, null,
+            """
+                    1) Perform a Gradle sync (press 'Sync Now' in the blue banner).
+                    2) Go to File > Project Structure > Modules and set Compile Sdk Version to 34 for FtcRobotController and TeamCode.
+                    3) Press Apply and OK."""
+    ));
 
-    static {
-        List<LibraryDescriptor> list = new ArrayList<>();
-
-        list.add(new LibraryDescriptor(
-                "roadrunner",
-                "Roadrunner",
-                "https://maven.brott.dev/",
-                Arrays.asList(
-                        "implementation \"com.acmerobotics.roadrunner:ftc:0.1.25\"",
-                        "implementation \"com.acmerobotics.roadrunner:core:1.0.1\"",
-                        "implementation \"com.acmerobotics.roadrunner:actions:1.0.1\"",
-                        "implementation \"com.acmerobotics.dashboard:dashboard:0.5.1\""
-                ),
-                // zip import info (optional) - keep existing quickstart sha URL
-                "https://github.com/acmerobotics/road-runner-quickstart/archive/6e63a7792e9bb6958798bf46fc03d84765b50c51.zip",
-                "TeamCode/src/main/java/org/firstinspires/ftc/teamcode",
-                "TeamCode/src/main/java/org/firstinspires/ftc/teamcode",
-                // manual steps shown to user after operation
-                "1) Perform a Gradle sync (press 'Sync Now' in the blue banner).\n" +
-                        "2) If the import task added any resources, verify they appear correctly in your project."
-        ));
-
-        list.add(new LibraryDescriptor(
-                "pedro",
-                "PedroPathing",
-                "https://mymaven.bylazar.com/releases",
-                Arrays.asList(
-                        "implementation 'com.pedropathing:ftc:2.0.4'",
-                        "implementation 'com.pedropathing:telemetry:1.0.0'",
-                        "implementation 'com.bylazar:fullpanels:1.0.6'"
-                ),
-                // No zip import for Pedro in the official instructions, keep null
-                null, null, null,
-                "1) Perform a Gradle sync (press 'Sync Now' in the blue banner).\n" +
-                        "2) Go to File > Project Structure > Modules and set Compile Sdk Version to 34 for FtcRobotController and TeamCode.\n" +
-                        "3) Press Apply and OK."
-        ));
-
-        LIBRARY_REGISTRY = Collections.unmodifiableList(list);
-    }
-
-    //builds checkboxkes for each library
+    //builds checkboxes for each library
     private static final class RegistryDialog extends DialogWrapper {
         private final Map<String, JCheckBox> boxes = new LinkedHashMap<>();
 
@@ -291,7 +285,7 @@ public class AddGradleDependency extends AnAction {
                 nextSteps.append("1) Perform a Gradle sync (press 'Sync Now' in the blue banner).\n\n");
             }
         }
-        if (nextSteps.length() == 0) {
+        if (nextSteps.isEmpty()) {
             nextSteps.append("No libraries were selected.");
         }
 
