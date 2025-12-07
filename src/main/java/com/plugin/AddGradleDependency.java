@@ -22,18 +22,10 @@ import org.jetbrains.plugins.groovy.lang.psi.api.statements.blocks.GrClosableBlo
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrMethodCall;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.path.GrMethodCallExpression;
 import org.jetbrains.plugins.groovy.lang.resolve.api.GroovyMethodCallReference;
-
 import javax.swing.*;
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 class Dialog extends DialogWrapper {
     final JCheckBox roadrunner = new JCheckBox("Roadrunner");
@@ -56,6 +48,22 @@ class Dialog extends DialogWrapper {
 }
 
 public class AddGradleDependency extends AnAction {
+    // Index of the closure block child within a statement node (abstracted to a constant for clarity)
+    private static final int CLOSURE_BLOCK_CHILD_INDEX = 2;
+
+    // Pedro constants (existing)
+    private static final String PEDRO_MAVEN_URL = "https://mymaven.bylazar.com/releases";
+    private static final String PEDRO_FTC_DEP = "implementation 'com.pedropathing:ftc:2.0.4'";
+    private static final String PEDRO_TELEMETRY_DEP = "implementation 'com.pedropathing:telemetry:1.0.0'";
+    private static final String FULLPANELS_DEP = "implementation 'com.bylazar:fullpanels:1.0.6'";
+
+    // Roadrunner constants (new) - keep dependency strings exactly as they should appear in the Gradle file
+    private static final String ROADRUNNER_MAVEN_URL = "https://maven.brott.dev/";
+    private static final String ROADRUNNER_FTC_DEP = "implementation \"com.acmerobotics.roadrunner:ftc:0.1.25\"";
+    private static final String ROADRUNNER_CORE_DEP = "implementation \"com.acmerobotics.roadrunner:core:1.0.1\"";
+    private static final String ROADRUNNER_ACTIONS_DEP = "implementation \"com.acmerobotics.roadrunner:actions:1.0.1\"";
+    private static final String DASHBOARD_DEP = "implementation \"com.acmerobotics.dashboard:dashboard:0.5.1\"";
+
     private static PsiFile getGradleFile(Project project, String basePath) {
         String fullPath = Paths.get(basePath, "TeamCode/build.gradle").toString();
 
@@ -81,59 +89,6 @@ public class AddGradleDependency extends AnAction {
             if (ref.getMethodName().equals(name)) return ref;
         }
         return null;
-    }
-
-    private String removeBeginning(String path) {
-        String[] segments = path.split(Pattern.quote("/"), -1);
-        segments[0] = "";
-        return String.join("/", segments);
-    }
-
-    private void importRoadrunner(String basePath, ProgressIndicator progressIndicator) {
-        URL url;
-        try {
-            byte[] buffer = new byte[1024];
-            File fullPath = new File(basePath);
-            String destDirPath = fullPath.getCanonicalPath();
-            // This is the latest version of the Roadrunner quickstart that I know of
-            url = URI.create("https://github.com/acmerobotics/road-runner-quickstart/archive/6e63a7792e9bb6958798bf46fc03d84765b50c51.zip").toURL();
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            ZipInputStream reader = new ZipInputStream(connection.getInputStream());
-            ZipEntry entry = reader.getNextEntry();
-            progressIndicator.checkCanceled();
-
-            while (entry != null) {
-                String zipPath = removeBeginning(entry.getName());
-                File newFile = new File(fullPath, zipPath);
-                String destFilePath = newFile.getCanonicalPath();
-
-                if (!destDirPath.equals(destFilePath) && zipPath.startsWith("/TeamCode/src/main/java/org/firstinspires/ftc/teamcode")) {
-                    progressIndicator.setText("Extracting " + newFile.getPath());
-                    if (!destFilePath.startsWith(destDirPath + File.separator)) {
-                        throw new RuntimeException("Entry is outside of the target dir: " + destFilePath);
-                    }
-                    if (entry.isDirectory()) {
-                        if (!newFile.isDirectory() && !newFile.mkdirs()) {
-                            throw new RuntimeException("Failed to create zip directory");
-                        }
-                    } else {
-                        File parent = newFile.getParentFile();
-                        if (!parent.isDirectory() && !parent.mkdirs()) {
-                            throw new IOException("Failed to create directory " + parent);
-                        }
-
-                        FileOutputStream fos = new FileOutputStream(newFile);
-                        int len;
-                        while ((len = reader.read(buffer)) > 0) {
-                            fos.write(buffer, 0, len);
-                        }
-                        fos.close();
-                    }
-                }
-                progressIndicator.checkCanceled();
-                entry = reader.getNextEntry();
-            }
-        } catch (IOException ignored) {}
     }
 
     @Override
@@ -171,9 +126,13 @@ public class AddGradleDependency extends AnAction {
         GrStatement statement;
         if (ref == null) {
             statement = fac.createStatementFromText("dependencies {\n}");
-            block = (GrClosableBlock) statement.getChildren()[2];
+            block = (GrClosableBlock) statement.getChildren()[CLOSURE_BLOCK_CHILD_INDEX];
         } else {
             statement = null;
+            if(((GrMethodCall)ref.getElement()).getClosureArguments().length == 0) {
+                Messages.showErrorDialog(project, "The dependencies block is malformed.", "Error");
+                return;
+            }
             block = ((GrMethodCall) ref.getElement()).getClosureArguments()[0];
         }
 
@@ -187,13 +146,13 @@ public class AddGradleDependency extends AnAction {
             GroovyMethodCallReference ref3 = getReference(refs, "repositories");
             if (ref3 == null) {
                 statement3 = fac.createStatementFromText("repositories {\n}");
-                block3 = (GrClosableBlock) statement3.getChildren()[2];
+                block3 = (GrClosableBlock) statement3.getChildren()[CLOSURE_BLOCK_CHILD_INDEX];
             } else {
                 statement3 = null;
                 block3 = ((GrMethodCall) ref3.getElement()).getClosureArguments()[0];
             }
             statement2 = fac.createStatementFromText("maven {\n}");
-            block2 = (GrClosableBlock) statement2.getChildren()[2];
+            block2 = (GrClosableBlock) statement2.getChildren()[CLOSURE_BLOCK_CHILD_INDEX];
         } else {
             statement3 = null;
             block3 = null;
@@ -207,26 +166,51 @@ public class AddGradleDependency extends AnAction {
                 @Override
                 public void run(@NotNull ProgressIndicator progressIndicator) {
                     progressIndicator.setIndeterminate(true);
-                    importRoadrunner(basePath, progressIndicator);
+                    GithubImports.importRoadrunner(basePath, progressIndicator);
                 }
             }.setCancelText("Cancel Import").queue();
         }
 
         WriteCommandAction.runWriteCommandAction(project, () -> {
             if (dialog.roadrunner.isSelected()) {
-                block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.brott.dev/'"), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.roadrunner:ftc:0.1.25\""), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.roadrunner:core:1.0.1\""), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.roadrunner:actions:1.0.1\""), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.acmerobotics.dashboard:dashboard:0.5.1\""), null);
+                // Set the Roadrunner maven url and add its dependencies using well-named constants
+                block2.addStatementBefore(fac.createStatementFromText("url = '" + ROADRUNNER_MAVEN_URL + "'"), null);
+                block.addStatementBefore(fac.createStatementFromText(ROADRUNNER_FTC_DEP), null);
+                block.addStatementBefore(fac.createStatementFromText(ROADRUNNER_CORE_DEP), null);
+                block.addStatementBefore(fac.createStatementFromText(ROADRUNNER_ACTIONS_DEP), null);
+                block.addStatementBefore(fac.createStatementFromText(DASHBOARD_DEP), null);
             }
             if (dialog.pedro.isSelected()) {
-                block2.addStatementBefore(fac.createStatementFromText("url = 'https://maven.pedropathing.com/'"), null);
-                block.addStatementBefore(fac.createStatementFromText("implementation \"com.pedropathing:pedro:1.0.9\""), null);
+                // Use the official Pedro/Bylazar maven URL and add the recommended dependencies.
+                block2.addStatementBefore(fac.createStatementFromText("url = '" + PEDRO_MAVEN_URL + "'"), null);
+
+                // Add the three dependencies recommended by Pedro's official instructions.
+                block.addStatementBefore(fac.createStatementFromText(PEDRO_FTC_DEP), null);
+                block.addStatementBefore(fac.createStatementFromText(PEDRO_TELEMETRY_DEP), null);
+                block.addStatementBefore(fac.createStatementFromText(FULLPANELS_DEP), null);
             }
             if (statement != null) file.addStatementBefore(statement, null);
             if (statement2 != null) block3.addStatementBefore(statement2, null);
             if (statement3 != null) file.addStatementBefore(statement3, null);
         });
+
+        // Build separate next-steps for Roadrunner and Pedro so each has clear, distinct instructions.
+        StringBuilder nextSteps = new StringBuilder();
+        if (dialog.roadrunner.isSelected()) {
+            nextSteps.append("Roadrunner - Next steps (manual):\n")
+                    .append("1) Perform a Gradle sync (press 'Sync Now' in the blue banner).\n")
+                    .append("2) If the import task added any resources, verify they appear correctly in your project.\n\n");
+        }
+        if (dialog.pedro.isSelected()) {
+            nextSteps.append("Pedro - Next steps (manual):\n")
+                    .append("1) Perform a Gradle sync (press 'Sync Now' in the blue banner).\n")
+                    .append("2) Go to File > Project Structure > Modules and set Compile Sdk Version to 34 for FtcRobotController and TeamCode.\n")
+                    .append("3) Press Apply and OK.\n");
+        }
+        if (nextSteps.length() == 0) {
+            nextSteps.append("No libraries were selected.");
+        }
+
+        Messages.showInfoMessage(project, nextSteps.toString(), "Library Import - Manual Steps");
     }
 }
