@@ -21,9 +21,7 @@
         </action>
         <action id="com.plugin.AddGradleDependency" class="com.plugin.AddGradleDependency" text="Add Gradle Dependency"
                 description="Adds a Gradle dependency">
-            <add-to-group group-id="EditorPopupMenu"
-                anchor="after"
-                relative-to-action="ShowIntentionsGroup"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="first" />
         </action>
         <action id="com.plugin.MakeFSM" class="com.plugin.MakeFSM" text="Add FSM"
                 description="Adds an FSM as a class field">
@@ -35,7 +33,7 @@
         </action>
         <action id="com.plugin.UseTemplate" class="com.plugin.UseTemplate" text="Use Template"
                 description="Uses a template that can autofill files in a project.">
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="first" />
         </action>
     </actions>
 </idea-plugin>
