@@ -143,6 +143,18 @@ public class AddGradleDependency extends AnAction {
                     "1) FTCLib vision depends on EasyOpenCV which depends on OpenCV-Repackaged. Copy libOpenCvAndroid453.so (armeabi-v7a) into the FIRST folder on the Robot Controller (use MTP mode).\n" +
                             "2) If anything failed, perform a Gradle sync (press 'Sync Now' in the blue banner).",
                     true, true, true
+            ),
+            new LibraryDescriptor(
+                    "nextftc",
+                    "NextFTC",
+                    null, // No additional Maven repository required
+                    Arrays.asList(
+                            "implementation 'dev.nextftc:ftc:1.0.1'",
+                            "implementation 'dev.nextftc:hardware:1.0.1' // If you would like to use the hardware module"
+                    ),
+                    /* no zip import */ null, null, null,
+                    "1) Perform a Gradle sync (press 'Sync Now' in the blue banner).",
+                    false, false, false
             )
     );
 
@@ -442,4 +454,3 @@ public class AddGradleDependency extends AnAction {
         Messages.showInfoMessage(project, nextSteps.toString().trim(), "Library Import - Manual Steps");
     }
 }
-
