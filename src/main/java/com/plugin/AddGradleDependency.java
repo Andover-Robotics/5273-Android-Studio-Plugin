@@ -24,12 +24,23 @@ import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.path.GrM
 import org.jetbrains.plugins.groovy.lang.resolve.api.GroovyMethodCallReference;
 
 import javax.swing.*;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AddGradleDependency extends AnAction {
     // Index of the closure block child within a statement node (abstracted cause im sigma)
     private static final int CLOSURE_BLOCK_CHILD_INDEX = 2;
+
+    // File path constants (abstract magic strings into well named constants)
+    private static final String ROOT_BUILD_GRADLE = "build.gradle";
+    private static final String BUILD_COMMON_GRADLE = "build.common.gradle";
+    private static final int MIN_SDK = 24;
+    private static final int TARGET_SDK = 28;
+    private static final String JAVA_VERSION_STR = "JavaVersion.VERSION_1_8";
 
     /**
      * @param id                 unique id
@@ -40,15 +51,20 @@ public class AddGradleDependency extends AnAction {
      * @param zipSourcePath      path inside zip to pull files from (nullable)
      * @param zipDestinationPath destination relative to project base (nullable)
      * @param manualSteps        user-facing manual next steps for this library (nullable)
+     * @param ensureMavenCentral if true, automatically add mavenCentral() to root build.gradle
+     * @param ensureBuildCommon  if true, automatically apply defaultConfig/compileOptions edits to build.common.gradle
+     * @param removeArm64Abi     if true, remove "arm64-v8a" entries from abiFilters in build.common.gradle (CV)
      */
     // Small DTO to hold all metadata for a library so adding new libraries is a single change.
     private record LibraryDescriptor(String id, String displayName, String mavenUrl, List<String> dependencyLines,
                                      String zipUrl, String zipSourcePath, String zipDestinationPath,
-                                     String manualSteps) {
+                                     String manualSteps,
+                                     boolean ensureMavenCentral, boolean ensureBuildCommon, boolean removeArm64Abi) {
         private LibraryDescriptor(String id, String displayName,
                                   String mavenUrl, List<String> dependencyLines,
                                   String zipUrl, String zipSourcePath, String zipDestinationPath,
-                                  String manualSteps) {
+                                  String manualSteps,
+                                  boolean ensureMavenCentral, boolean ensureBuildCommon, boolean removeArm64Abi) {
             this.id = id;
             this.displayName = displayName;
             this.mavenUrl = mavenUrl;
@@ -57,43 +73,78 @@ public class AddGradleDependency extends AnAction {
             this.zipSourcePath = zipSourcePath;
             this.zipDestinationPath = zipDestinationPath;
             this.manualSteps = manualSteps;
+            this.ensureMavenCentral = ensureMavenCentral;
+            this.ensureBuildCommon = ensureBuildCommon;
+            this.removeArm64Abi = removeArm64Abi;
         }
     }
 
     // Registry of libraries, rn its just roadrunner and pedro
-    private static final List<LibraryDescriptor> LIBRARY_REGISTRY = List.of(new LibraryDescriptor(
-            "roadrunner",
-            "Roadrunner",
-            "https://maven.brott.dev/",
-            Arrays.asList(
-                    "implementation \"com.acmerobotics.roadrunner:ftc:0.1.25\"",
-                    "implementation \"com.acmerobotics.roadrunner:core:1.0.1\"",
-                    "implementation \"com.acmerobotics.roadrunner:actions:1.0.1\"",
-                    "implementation \"com.acmerobotics.dashboard:dashboard:0.5.1\""
+    private static final List<LibraryDescriptor> LIBRARY_REGISTRY = List.of(
+            new LibraryDescriptor(
+                    "roadrunner",
+                    "Roadrunner",
+                    "https://maven.brott.dev/",
+                    Arrays.asList(
+                            "implementation \"com.acmerobotics.roadrunner:ftc:0.1.25\"",
+                            "implementation \"com.acmerobotics.roadrunner:core:1.0.1\"",
+                            "implementation \"com.acmerobotics.roadrunner:actions:1.0.1\"",
+                            "implementation \"com.acmerobotics.dashboard:dashboard:0.5.1\""
+                    ),
+                    // zip import info (optional) - keep existing quickstart sha URL
+                    "https://github.com/acmerobotics/road-runner-quickstart/archive/6e63a7792e9bb6958798bf46fc03d84765b50c51.zip",
+                    "TeamCode/src/main/java/org/firstinspires/ftc/teamcode",
+                    "TeamCode/src/main/java/org/firstinspires/ftc/teamcode",
+                    // manual steps shown to user after operation
+                    "1) Perform a Gradle sync (press 'Sync Now' in the blue banner).\n" +
+                            "2) If the import task added any resources, verify they appear correctly in your project.",
+                    false, false, false
             ),
-            // zip import info (optional) - keep existing quickstart sha URL
-            "https://github.com/acmerobotics/road-runner-quickstart/archive/6e63a7792e9bb6958798bf46fc03d84765b50c51.zip",
-            "TeamCode/src/main/java/org/firstinspires/ftc/teamcode",
-            "TeamCode/src/main/java/org/firstinspires/ftc/teamcode",
-            // manual steps shown to user after operation
-            "1) Perform a Gradle sync (press 'Sync Now' in the blue banner).\n" +
-                    "2) If the import task added any resources, verify they appear correctly in your project."
-    ), new LibraryDescriptor(
-            "pedro",
-            "PedroPathing",
-            "https://mymaven.bylazar.com/releases",
-            Arrays.asList(
-                    "implementation 'com.pedropathing:ftc:2.0.4'",
-                    "implementation 'com.pedropathing:telemetry:1.0.0'",
-                    "implementation 'com.bylazar:fullpanels:1.0.6'"
+            new LibraryDescriptor(
+                    "pedro",
+                    "PedroPathing",
+                    "https://mymaven.bylazar.com/releases",
+                    Arrays.asList(
+                            "implementation 'com.pedropathing:ftc:2.0.4'",
+                            "implementation 'com.pedropathing:telemetry:1.0.0'",
+                            "implementation 'com.bylazar:fullpanels:1.0.6'"
+                    ),
+                    // No zip import for Pedro in the official instructions, keep null
+                    null, null, null,
+                    """
+                            1) Perform a Gradle sync (press 'Sync Now' in the blue banner).
+                            2) Go to File > Project Structure > Modules and set Compile Sdk Version to 34 for FtcRobotController and TeamCode.
+                            3) Press Apply and OK.""",
+                    false, false, false
             ),
-            // No zip import for Pedro in the official instructions, keep null
-            null, null, null,
-            """
-                    1) Perform a Gradle sync (press 'Sync Now' in the blue banner).
-                    2) Go to File > Project Structure > Modules and set Compile Sdk Version to 34 for FtcRobotController and TeamCode.
-                    3) Press Apply and OK."""
-    ));
+            // FTCLib core: automatically add mavenCentral and apply build.common.gradle edits
+            new LibraryDescriptor(
+                    "ftclib-core",
+                    "FTCLib (core)",
+                    "https://repo.maven.apache.org/maven2",
+                    Arrays.asList(
+                            "implementation 'org.ftclib.ftclib:core:2.1.1' // core"
+                    ),
+                    /* no zip import */ null, null, null,
+                    // manual steps: instruct changes to root and build.common.gradle
+                    "1) If anything failed, perform a Gradle sync (press 'Sync Now' in the blue banner).",
+                    true, true, false
+            ),
+            // FTCLib vision: same as core plus CV-specific abi edits and guidance about OpenCV .so
+            new LibraryDescriptor(
+                    "ftclib-vision",
+                    "FTCLib (vision)",
+                    "https://repo.maven.apache.org/maven2",
+                    Arrays.asList(
+                            "implementation 'org.ftclib.ftclib:vision:2.1.0' // vision",
+                            "implementation 'org.ftclib.ftclib:core:2.1.1' // core"
+                    ),
+                    /* no zip import */ null, null, null,
+                    "1) FTCLib vision depends on EasyOpenCV which depends on OpenCV-Repackaged. Copy libOpenCvAndroid453.so (armeabi-v7a) into the FIRST folder on the Robot Controller (use MTP mode).\n" +
+                            "2) If anything failed, perform a Gradle sync (press 'Sync Now' in the blue banner).",
+                    true, true, true
+            )
+    );
 
     //builds checkboxes for each library
     private static final class RegistryDialog extends DialogWrapper {
@@ -160,6 +211,97 @@ public class AddGradleDependency extends AnAction {
             if (ref.getMethodName().equals(name)) return ref;
         }
         return null;
+    }
+
+    //Ensure root build.gradle has mavenCentral() inside a repositories block andinsert safely if not present.
+    private static void ensureMavenCentralInRoot(Project project, String basePath) {
+        String fileUrl = "file://" + Paths.get(basePath, ROOT_BUILD_GRADLE).toString().replace("\\", "/");
+        VirtualFile vf = VirtualFileManager.getInstance().findFileByUrl(fileUrl);
+        if (vf == null) {
+            Messages.showWarningDialog(project, "Root build.gradle not found; could not add mavenCentral().", "Warning");
+            return;
+        }
+        try {
+            String content = new String(vf.contentsToByteArray(), StandardCharsets.UTF_8);
+            if (content.contains("mavenCentral()")) return; // already present
+
+            // If there's a repositories block, insert mavenCentral() right inside it; otherwise prepend a new block
+            Pattern repoPattern = Pattern.compile("repositories\\s*\\{", Pattern.MULTILINE);
+            Matcher m = repoPattern.matcher(content);
+            if (m.find()) {
+                int insertPos = m.end();
+                StringBuilder sb = new StringBuilder(content);
+                sb.insert(insertPos, "\n    mavenCentral()");
+                vf.setBinaryContent(sb.toString().getBytes(StandardCharsets.UTF_8));
+            } else {
+                // no repositories block; prepend one at the top
+                String newContent = "repositories {\n    mavenCentral()\n}\n\n" + content;
+                vf.setBinaryContent(newContent.getBytes(StandardCharsets.UTF_8));
+            }
+        } catch (IOException ex) {
+            Messages.showErrorDialog(project, "Failed to update root build.gradle: " + ex.getMessage(), "Error");
+        }
+    }
+
+    // a few co
+    private static void ensureBuildCommonSettings(Project project, String basePath, boolean removeArm64) {
+        String[] candidatePaths = {BUILD_COMMON_GRADLE, "gradle/" + BUILD_COMMON_GRADLE, "buildSrc/" + BUILD_COMMON_GRADLE};
+        VirtualFile vf = null;
+        for (String p : candidatePaths) {
+            String fileUrl = "file://" + Paths.get(basePath, p).toString().replace("\\", "/");
+            vf = VirtualFileManager.getInstance().findFileByUrl(fileUrl);
+            if (vf != null) break;
+        }
+        if (vf == null) {
+            Messages.showWarningDialog(project, "build.common.gradle not found in expected locations; manual edits may be required.", "Warning");
+            return;
+        }
+        try {
+            String content = new String(vf.contentsToByteArray(), StandardCharsets.UTF_8);
+
+            // Set minSdkVersion
+            content = content.replaceAll("minSdkVersion\\s+\\d+", "minSdkVersion " + MIN_SDK);
+            // Set targetSdkVersion
+            content = content.replaceAll("targetSdkVersion\\s+\\d+", "targetSdkVersion " + TARGET_SDK);
+
+            // Ensure multiDexEnabled true inside defaultConfig; attempt to insert after defaultConfig { if missing
+            if (!content.contains("multiDexEnabled true")) {
+                Pattern defaultConfigPattern = Pattern.compile("defaultConfig\\s*\\{", Pattern.MULTILINE);
+                Matcher m = defaultConfigPattern.matcher(content);
+                if (m.find()) {
+                    int insertPos = m.end();
+                    StringBuilder sb = new StringBuilder(content);
+                    sb.insert(insertPos, "\n        multiDexEnabled true");
+                    content = sb.toString();
+                } else {
+                    // fallback: append a defaultConfig snippet at the top of the file
+                    content = "defaultConfig {\n    applicationId 'com.qualcomm.ftcrobotcontroller'\n    minSdkVersion " + MIN_SDK + "\n    targetSdkVersion " + TARGET_SDK + "\n    multiDexEnabled true\n}\n\n" + content;
+                }
+            }
+
+            // Ensure compileOptions block exists and uses JavaVersion.VERSION_1_8
+            if (!content.contains("compileOptions")) {
+                content += "\ncompileOptions {\n    sourceCompatibility " + JAVA_VERSION_STR + "\n    targetCompatibility " + JAVA_VERSION_STR + "\n}\n";
+            } else {
+                content = content.replaceAll("sourceCompatibility\\s+JavaVersion\\.VERSION_\\d+_\\d+", "sourceCompatibility " + JAVA_VERSION_STR);
+                content = content.replaceAll("targetCompatibility\\s+JavaVersion\\.VERSION_\\d+_\\d+", "targetCompatibility " + JAVA_VERSION_STR);
+            }
+
+            // Optionally remove arm64-v8a occurrences and ensure armeabi-v7a exists
+            if (removeArm64) {
+                // conservative removals of explicit "arm64-v8a" tokens
+                content = content.replaceAll(",?\\s*\"arm64-v8a\"\\s*,?", ",");
+                content = content.replaceAll("\"arm64-v8a\"", "");
+                if (!content.contains("armeabi-v7a")) {
+                    // append a simple ndk block if none of the armeabi references exist
+                    content += "\nndk {\n    abiFilters \"armeabi-v7a\"\n}\n";
+                }
+            }
+
+            vf.setBinaryContent(content.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException ex) {
+            Messages.showErrorDialog(project, "Failed to update build.common.gradle: " + ex.getMessage(), "Error");
+        }
     }
 
     @Override
@@ -257,7 +399,15 @@ public class AddGradleDependency extends AnAction {
             for (LibraryDescriptor lib : LIBRARY_REGISTRY) {
                 if (!selected.contains(lib.id)) continue;
 
-                // add maven repo url if present
+                // If requested, apply root/build.common.gradle edits to reduce manual steps
+                if (lib.ensureMavenCentral) {
+                    ensureMavenCentralInRoot(project, basePath);
+                }
+                if (lib.ensureBuildCommon) {
+                    ensureBuildCommonSettings(project, basePath, lib.removeArm64Abi);
+                }
+
+                // add maven repo url if present (TeamCode build.gradle repositories/maven block)
                 if (lib.mavenUrl != null && !lib.mavenUrl.isEmpty()) {
                     mavenBlock.addStatementBefore(fac.createStatementFromText("url = '" + lib.mavenUrl + "'"), null);
                 }
@@ -292,3 +442,4 @@ public class AddGradleDependency extends AnAction {
         Messages.showInfoMessage(project, nextSteps.toString().trim(), "Library Import - Manual Steps");
     }
 }
+
