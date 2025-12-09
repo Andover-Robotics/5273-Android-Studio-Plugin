@@ -1,7 +1,7 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.5273.mjolnir.ftc</id>
-    <name>Mjolnir for FTC</name>
+    <id>com.plugin</id>
+    <name>Mjolnir for FTC (pre-release)</name>
     <vendor email="arnav@andoverrobotics.com" url="https://www.andoverrobotics.com/">5273 ARC Thunder</vendor>
 
     <depends>com.intellij.modules.platform</depends>
