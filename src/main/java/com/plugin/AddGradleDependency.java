@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// TODO Using modals to show errors is discouraged; should editor hints or balloons be used instead?
 public class AddGradleDependency extends AnAction {
     // Index of the closure block child within a statement node (abstracted cause im sigma)
     private static final int CLOSURE_BLOCK_CHILD_INDEX = 2;
@@ -203,13 +204,13 @@ public class AddGradleDependency extends AnAction {
         VirtualFile file = VirtualFileManager.getInstance().findFileByUrl(fileUrl);
 
         if (file == null) {
-            Messages.showErrorDialog(project, "File build.gradle not found at TeamCode/build.gradle", "Error");
+            Messages.showErrorDialog(project, "File build.gradle not found at TeamCode/build.gradle", "Unable to Make Gradle Changes");
             return null;
         }
 
         PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
         if (psiFile == null) {
-            Messages.showErrorDialog(project, "Failed to load the Gradle file.", "Error");
+            Messages.showErrorDialog(project, "Failed to load the Gradle file.", "Unable to Make Gradle Changes");
             return null;
         }
         return psiFile;
@@ -227,7 +228,7 @@ public class AddGradleDependency extends AnAction {
         String fileUrl = "file://" + Paths.get(basePath, ROOT_BUILD_GRADLE).toString().replace("\\", "/");
         VirtualFile vf = VirtualFileManager.getInstance().findFileByUrl(fileUrl);
         if (vf == null) {
-            Messages.showWarningDialog(project, "Root build.gradle not found; could not add mavenCentral().", "Warning");
+            Messages.showWarningDialog(project, "Root build.gradle not found", "Could Not Add mavenCentral()");
             return;
         }
         try {
@@ -248,7 +249,7 @@ public class AddGradleDependency extends AnAction {
                 vf.setBinaryContent(newContent.getBytes(StandardCharsets.UTF_8));
             }
         } catch (IOException ex) {
-            Messages.showErrorDialog(project, "Failed to update root build.gradle: " + ex.getMessage(), "Error");
+            Messages.showErrorDialog(project, "Failed to update root build.gradle: " + ex.getMessage(), "Could not Update build.gradle");
         }
     }
 
@@ -262,7 +263,7 @@ public class AddGradleDependency extends AnAction {
             if (vf != null) break;
         }
         if (vf == null) {
-            Messages.showWarningDialog(project, "build.common.gradle not found in expected locations; manual edits may be required.", "Warning");
+            Messages.showWarningDialog(project, "build.common.gradle not found in expected locations", "Manual Edits May Be Required");
             return;
         }
         try {
@@ -309,7 +310,7 @@ public class AddGradleDependency extends AnAction {
 
             vf.setBinaryContent(content.getBytes(StandardCharsets.UTF_8));
         } catch (IOException ex) {
-            Messages.showErrorDialog(project, "Failed to update build.common.gradle: " + ex.getMessage(), "Error");
+            Messages.showErrorDialog(project, ex.getMessage(), "Failed to Update build.gradle");
         }
     }
 
@@ -317,7 +318,7 @@ public class AddGradleDependency extends AnAction {
     public void actionPerformed(AnActionEvent e) {
         Project project = e.getProject();
         if (project == null) {
-            Messages.showErrorDialog("Project is not available.", "Error");
+            Messages.showErrorDialog("Project is not available.", "Project Not Available");
             return;
         }
         String basePath = project.getBasePath();
@@ -353,7 +354,7 @@ public class AddGradleDependency extends AnAction {
         } else {
             dependenciesStatement = null;
             if (((GrMethodCall) ref.getElement()).getClosureArguments().length == 0) {
-                Messages.showErrorDialog(project, "The dependencies block is malformed.", "Error");
+                Messages.showErrorDialog(project, "The dependencies block is malformed.", "Unable to Make Dependency Changes");
                 return;
             }
             dependenciesBlock = ((GrMethodCall) ref.getElement()).getClosureArguments()[0];
@@ -393,6 +394,7 @@ public class AddGradleDependency extends AnAction {
                 final String src = lib.zipSourcePath;
                 final String dest = lib.zipDestinationPath;
                 final String label = lib.displayName;
+                // TODO use Kotlin so obsolete API is not used
                 new Task.Backgroundable(project, "Importing " + label) {
                     @Override
                     public void run(@NotNull ProgressIndicator progressIndicator) {
