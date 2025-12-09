@@ -172,14 +172,11 @@ public class AddGradleDependency extends AnAction {
         public JPanel createCenterPanel() {
             JPanel panel = new JPanel();
             panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-            JPanel row = new JPanel();
-            row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-            for (LibraryDescriptor lib : LIBRARY_REGISTRY) {
+            for (LibraryDescriptor lib: LIBRARY_REGISTRY) {
                 JCheckBox cb = new JCheckBox(lib.displayName);
                 boxes.put(lib.id, cb);
-                row.add(cb);
+                panel.add(cb);
             }
-            panel.add(row);
             return panel;
         }
 
