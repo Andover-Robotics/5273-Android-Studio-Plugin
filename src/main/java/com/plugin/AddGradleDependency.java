@@ -112,7 +112,7 @@ public class AddGradleDependency extends AnAction {
                     ),
                     // No zip import for Pedro in the official instructions, keep null
                     "https://github.com/Pedro-Pathing/Quickstart/archive/refs/tags/v2.0.4.zip",
-                    "TeamCode/src/main/java/org/firstinspires/ftc/teamcode",
+                    "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/pedroPathing",
                     "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/pedroPathing",
                     """
                             1) Perform a Gradle sync (press 'Sync Now' in the blue banner).
