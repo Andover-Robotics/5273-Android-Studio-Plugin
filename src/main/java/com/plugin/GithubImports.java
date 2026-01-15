@@ -1,6 +1,9 @@
 package com.plugin;
 
 import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.VirtualFileManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -141,5 +144,8 @@ public class GithubImports {
             // Surface failure so callers / the user can see it
             throw new RuntimeException("Failed to import from zip: " + e.getMessage(), e);
         }
+
+        VirtualFile file = VirtualFileManager.getInstance().findFileByUrl("file://" + basePath.replace("\\", "/"));
+        file.refresh(true, true);
     }
 }
