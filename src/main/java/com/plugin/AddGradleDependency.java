@@ -111,7 +111,9 @@ public class AddGradleDependency extends AnAction {
                             "implementation 'com.bylazar:fullpanels:1.0.6'"
                     ),
                     // No zip import for Pedro in the official instructions, keep null
-                    null, null, null,
+                    "https://github.com/Pedro-Pathing/Quickstart/archive/refs/tags/v2.0.4.zip",
+                    "TeamCode/src/main/java/org/firstinspires/ftc/teamcode",
+                    "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/pedroPathing",
                     """
                             1) Perform a Gradle sync (press 'Sync Now' in the blue banner).
                             2) Go to File > Project Structure > Modules and set Compile Sdk Version to 34 for FtcRobotController and TeamCode.
